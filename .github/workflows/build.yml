@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,11 +36,19 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Build APKs (one per device type)
+        run: flutter build apk --release --split-per-abi
 
-      - name: Upload APK
+      - name: Upload APKs as artifact
         uses: actions/upload-artifact@v4
         with:
           name: coffee-track-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/*.apk
+
+      - name: Publish APKs as a GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Coffee Track build ${{ github.run_number }}
+          files: build/app/outputs/flutter-apk/*.apk
+
